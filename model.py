@@ -201,7 +201,7 @@ model.compile(loss = 'mse', optimizer = 'adam')
 
 model.fit_generator(train_generator, samples_per_epoch=n_train,
                     validation_data=val_generator, nb_val_samples=n_val,
-                    nb_epoch=3)
+                    nb_epoch=5)
 
 model.save('model.h5')
 
