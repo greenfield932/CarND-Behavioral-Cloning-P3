@@ -48,7 +48,7 @@ def readInputData(driving_log_filename):
         samples.append([data[left_img_idx], steering + correction])
 
         samples.append([data[right_img_idx], steering - correction])
-
+        
     return samples
 
 def readImage(filename):
@@ -92,6 +92,7 @@ def evalLayer(model, image, idx):
 def augment(image, steering, augtype):
     if augtype == 'flip':        
         image_flipped = np.fliplr(image)
+               
         steering_flipped = -steering
         return image_flipped, steering_flipped
     elif augtype == 'bright':
@@ -111,14 +112,14 @@ def generator(samples, batch_size=30):
     
     while 1: # Loop forever so the generator never terminates
         sklearn.utils.shuffle(samples)
-        for offset in range(0, num_samples, batch_size/3):
-            batch_samples = samples[offset:offset+batch_size/3]
+        for offset in range(0, num_samples, int(batch_size/3)):
+            batch_samples = samples[offset:offset+int(batch_size/3)]
             
             images = []
             angles = []
             for batch_sample in batch_samples:
                 image0 = readImage(batch_sample[0])
-                steering = batch_sample[1]
+                steering = float(batch_sample[1])
                 
                 image = image0
                 
