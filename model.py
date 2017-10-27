@@ -188,11 +188,11 @@ model.add(Dense(1))
 
 model.compile(loss = 'mse', optimizer = 'adam')
 
-model.summary()
+#model.summary()
 #model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch = 8)
 
-#model.fit_generator(train_generator, samples_per_epoch=n_train,
-#                    validation_data=val_generator, nb_val_samples=n_val,
-#                    nb_epoch=3)
+model.fit_generator(train_generator, samples_per_epoch=n_train,
+                    validation_data=val_generator, nb_val_samples=n_val,
+                    nb_epoch=3)
 
-#model.save('model.h5')
+model.save('model.h5')
