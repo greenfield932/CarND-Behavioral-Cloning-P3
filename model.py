@@ -34,7 +34,7 @@ def readInputData(driving_log_filename):
 
     samples = []
 
-    correction = 0.35 # this is a parameter to tune
+    correction = 0.42 # this is a parameter to tune
     
     for data in lines:
         #image = cv2.imread(data[center_img_idx])
@@ -51,6 +51,9 @@ def readInputData(driving_log_filename):
 
     return samples
 
+def readImage(filename):
+    image = Image.open(filename)
+    return np.asarray(image)
 
 def drawImage(image):
     f, ax = plt.subplots(1, 1, figsize=(5, 5))
@@ -86,42 +89,47 @@ def evalLayer(model, image, idx):
     cropping_output = K.function([model.layers[idx].input], [model.layers[idx].output])
     return cropping_output([image[None,...]])[0]
 
-def trans_image(image,steer,trans_range):
-    # Translation
-    tr_x = trans_range*np.random.uniform()-trans_range/2
-    steer_ang = steer + tr_x/trans_range*2*.2
-    tr_y = 40*np.random.uniform()-40/2
-    #tr_y = 0
-    Trans_M = np.float32([[1,0,tr_x],[0,1,tr_y]])
-    image_tr = cv2.warpAffine(image,Trans_M,(cols,rows))
-    
-    return image_tr,steer_ang
-
 def augment(image, steering, augtype):
     if augtype == 'flip':        
         image_flipped = np.fliplr(image)
         steering_flipped = -steering
         return image_flipped, steering_flipped
-    elif augtype == 'shift':
-        return trans_image(image, steering, 30)
-    
+    elif augtype == 'bright':
+        image = cv2.cvtColor(image,cv2.COLOR_RGB2HSV)
+        image = np.array(image, dtype = np.float32)
+        random_bright = .5+np.random.uniform()
+        image[:,:,2] = image[:,:,2]*random_bright
+        image[:,:,2][image[:,:,2]>255]  = 255
+        image = np.array(image, dtype = np.uint8)
+        image = cv2.cvtColor(image,cv2.COLOR_HSV2RGB)
+        return image, steering    
     return image, steering
         
-def generator(samples, batch_size=32):
+def generator(samples, batch_size=30):
 
     num_samples = len(samples)
+    
     while 1: # Loop forever so the generator never terminates
         sklearn.utils.shuffle(samples)
-        for offset in range(0, num_samples, batch_size):
-            batch_samples = samples[offset:offset+batch_size]
+        for offset in range(0, num_samples, batch_size/3):
+            batch_samples = samples[offset:offset+batch_size/3]
             
             images = []
             angles = []
             for batch_sample in batch_samples:
-                image = Image.open(batch_sample[0])
-                image = np.asarray(image)
+                image0 = readImage(batch_sample[0])
                 steering = batch_sample[1]
                 
+                image = image0
+                
+                images.append(image)
+                angles.append(steering)
+                
+                image, steering = augment(image0, steering, 'flip')
+                images.append(image)
+                angles.append(steering)
+
+                image, steering = augment(image0, steering, 'bright')
                 images.append(image)
                 angles.append(steering)
 
@@ -138,8 +146,8 @@ train, val = train_test_split(samples, test_size=0.2)
 train_generator = generator(train, batch_size=32)
 val_generator = generator(val, batch_size=32)
 
-n_train = len(train)
-n_val = len(val)
+n_train = len(train)*3
+n_val = len(val)*3
 
 model = Sequential()
 model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160, 320, 3)))
@@ -196,3 +204,7 @@ model.fit_generator(train_generator, samples_per_epoch=n_train,
                     nb_epoch=3)
 
 model.save('model.h5')
+
+#img = readImage(samples[0][0])
+#img2, steering = augment(img, 0, 'bright')
+#drawImages([img, img2], 1,3)
