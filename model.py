@@ -34,7 +34,7 @@ def readInputData(driving_log_filename):
 
     samples = []
 
-    correction = 0.42 # this is a parameter to tune
+    correction = 0.35 # this is a parameter to tune
     
     for data in lines:
         #image = cv2.imread(data[center_img_idx])
@@ -130,9 +130,9 @@ def generator(samples, batch_size=30):
                 images.append(image)
                 angles.append(steering)
 
-                image, steering = augment(image0, steering, 'bright')
-                images.append(image)
-                angles.append(steering)
+                #image, steering = augment(image0, steering, 'bright')
+                #images.append(image)
+                #angles.append(steering)
 
             X_train = np.array(images)
             y_train = np.array(angles)
@@ -147,8 +147,8 @@ train, val = train_test_split(samples, test_size=0.2)
 train_generator = generator(train, batch_size=32)
 val_generator = generator(val, batch_size=32)
 
-n_train = len(train)*3
-n_val = len(val)*3
+n_train = len(train)*2
+n_val = len(val)*2
 
 model = Sequential()
 model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160, 320, 3)))
