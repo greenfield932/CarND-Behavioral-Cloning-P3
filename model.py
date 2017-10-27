@@ -34,7 +34,7 @@ def readInputData(driving_log_filename):
 
     samples = []
 
-    correction = 0.25 # this is a parameter to tune
+    correction = 0.35 # this is a parameter to tune
     
     for data in lines:
         #image = cv2.imread(data[center_img_idx])
@@ -86,11 +86,25 @@ def evalLayer(model, image, idx):
     cropping_output = K.function([model.layers[idx].input], [model.layers[idx].output])
     return cropping_output([image[None,...]])[0]
 
+def trans_image(image,steer,trans_range):
+    # Translation
+    tr_x = trans_range*np.random.uniform()-trans_range/2
+    steer_ang = steer + tr_x/trans_range*2*.2
+    tr_y = 40*np.random.uniform()-40/2
+    #tr_y = 0
+    Trans_M = np.float32([[1,0,tr_x],[0,1,tr_y]])
+    image_tr = cv2.warpAffine(image,Trans_M,(cols,rows))
+    
+    return image_tr,steer_ang
+
 def augment(image, steering, augtype):
-    if augtype == 'f':        
+    if augtype == 'flip':        
         image_flipped = np.fliplr(image)
         steering_flipped = -steering
         return image_flipped, steering_flipped
+    elif augtype == 'shift':
+        return trans_image(image, steering, 30)
+    
     return image, steering
         
 def generator(samples, batch_size=32):
@@ -138,17 +152,17 @@ model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160, 320, 3)))
 #drawImage(cropped_image)
 
 model.add(Lambda(lambda x: (x / 255.0) - 0.5))
-model.add(Convolution2D(24, 5, 5, subsample=(1, 1), border_mode='same',  input_shape=(3,160,320)))
+model.add(Convolution2D(24, 5, 5, subsample=(1, 1), border_mode='valid'))
 model.add(MaxPooling2D((2, 2)))
 model.add(Dropout(0.5))
 model.add(Activation('relu'))
 
-model.add(Convolution2D(48, 5, 5, subsample=(1, 1), border_mode='same',  input_shape=(3,160,320)))
+model.add(Convolution2D(48, 5, 5, subsample=(2, 2), border_mode='valid'))
 model.add(MaxPooling2D((2, 2)))
 model.add(Dropout(0.5))
 model.add(Activation('relu'))
 
-model.add(Convolution2D(96, 3, 3, subsample=(2, 2), border_mode='same',  input_shape=(3,160,320)))
+model.add(Convolution2D(96, 3, 3, subsample=(2, 2), border_mode='valid'))
 model.add(MaxPooling2D((2, 2)))
 model.add(Dropout(0.5))
 model.add(Activation('relu'))
@@ -174,11 +188,11 @@ model.add(Dense(1))
 
 model.compile(loss = 'mse', optimizer = 'adam')
 
-#model.summary()
+model.summary()
 #model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch = 8)
 
-model.fit_generator(train_generator, samples_per_epoch=n_train,
-                    validation_data=val_generator, nb_val_samples=n_val,
-                    nb_epoch=3)
+#model.fit_generator(train_generator, samples_per_epoch=n_train,
+#                    validation_data=val_generator, nb_val_samples=n_val,
+#                    nb_epoch=3)
 
-model.save('model.h5')
+#model.save('model.h5')
