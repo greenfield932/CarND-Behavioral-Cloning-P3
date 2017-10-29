@@ -203,12 +203,12 @@ model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160, 320, 3)))
 model.add(Lambda(lambda x: (x / 255.0) - 0.5))
 model.add(Convolution2D(24, 5, 5, subsample=(1, 1), border_mode='valid'))
 model.add(MaxPooling2D((2, 2)))
-model.add(Dropout(0.5))
+model.add(Dropout(0.4))
 model.add(Activation('relu'))
 
 model.add(Convolution2D(48, 5, 5, subsample=(2, 2), border_mode='valid'))
 model.add(MaxPooling2D((2, 2)))
-model.add(Dropout(0.5))
+model.add(Dropout(0.4))
 model.add(Activation('relu'))
 
 model.add(Convolution2D(96, 3, 3, subsample=(2, 2), border_mode='valid'))
@@ -240,16 +240,16 @@ model.compile(loss = 'mse', optimizer = 'adam')
 #model.summary()
 #model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch = 8)
 
-#history = model.fit_generator(train_generator, samples_per_epoch=n_train,
-#                    validation_data=val_generator, nb_val_samples=n_val,
-#                    nb_epoch=7)
+history = model.fit_generator(train_generator, samples_per_epoch=n_train,
+                    validation_data=val_generator, nb_val_samples=n_val,
+                    nb_epoch=8)
 #print(history)
-#drawLoss(history)
-#model.save('model.h5')
+drawLoss(history)
+model.save('model.h5')
 #showCorrection(samples)
 #showFlip(samples)
 #showCrop(model, samples)
-drawImages([readImage(samples[0][0])],1,1,['center image'])
+#drawImages([readImage(samples[0][0])],1,1,['center image'])
 
 #img = readImage(samples[0][0])
 #img2, steering = augment(img, 0, 'bright')
