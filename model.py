@@ -38,12 +38,15 @@ def readInputData(driving_log_filename):
 
     correction = 0.35 # this is a parameter to tune
     
+    cnt = 0
     for data in lines:
         steering = float(data[steering_idx])
         samples.append([data[center_img_idx], steering])
         samples.append([data[left_img_idx], steering + correction])
         samples.append([data[right_img_idx], steering - correction])
-        
+        if cnt > 22000:
+            break
+        cnt+=1
     return samples
 
 # read image data from file
@@ -163,51 +166,106 @@ def drawLoss(history):
     plt.legend(['train', 'test'], loc='upper left')
     plt.show()
 
+def LeNet():
+    
+    model = Sequential()
+
+    model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160, 320, 3))) #crop image to remove non relevant data (sky and car head)
+
+    model.add(Lambda(lambda x: (x / 255.0) - 0.5)) # normalize data (mean = 0)
+
+    
+    model.add(Convolution2D(6, 5, 5, subsample=(1, 1), border_mode='valid')) #first convolutional layer 6 filters, ReLU activation, max pooling
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D((2, 2)))
+
+    model.add(Convolution2D(16, 5, 5, subsample=(1, 1), border_mode='valid')) #second convolutional layer 16 filters, ReLU activation, max pooling
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D((2, 2)))
+
+
+    model.add(Flatten()) # Flatten
+    model.add(Dense(400)) #Fully connected 1
+    model.add(Dense(120)) #Fully connected 2
+    model.add(Dense(84)) #Fully connected 3 
+    model.add(Dense(1)) #Fully connected 4 
+    
+    return model
+
+def DAVE():
+    model = Sequential()
+
+    model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160, 320, 3))) #crop image to remove non relevant data (sky and car head)
+
+    model.add(Lambda(lambda x: (x / 255.0) - 0.5)) # normalize data (mean = 0)
+    
+    model.add(Convolution2D(24, 5, 5, subsample=(2, 2), border_mode='valid')) 
+    model.add(Convolution2D(36, 5, 5, subsample=(2, 2), border_mode='valid')) 
+    model.add(Convolution2D(48, 5, 5, subsample=(2, 2), border_mode='valid')) 
+    model.add(Convolution2D(64, 3, 3, subsample=(1, 1), border_mode='valid')) 
+    model.add(Convolution2D(64, 3, 3, subsample=(1, 1), border_mode='valid'))
+
+
+    model.add(Flatten()) # Flatten
+    model.add(Dense(100)) #Fully connected 1
+    model.add(Dense(50)) #Fully connected 2
+    model.add(Dense(10)) #Fully connected 3 
+    model.add(Dense(1)) #Fully connected 4 
+    
+    return model
+    
+    
+def MyNet():
+    model = Sequential()
+
+    model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160, 320, 3))) #crop image to remove non relevant data (sky and car head)
+
+    model.add(Lambda(lambda x: (x / 255.0) - 0.5)) # normalize data (mean = 0)
+    
+        
+    model.add(Convolution2D(24, 5, 5, subsample=(1, 1), border_mode='valid')) #first convolutional layer 24 filters, pooling, dropout, ReLU activation
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Dropout(0.5))
+    model.add(Activation('relu'))
+
+    model.add(Convolution2D(48, 5, 5, subsample=(2, 2), border_mode='valid'))  #second convolutional layer 48 filters, pooling, dropout, ReLU activation
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Dropout(0.5))
+    model.add(Activation('relu'))
+
+    model.add(Convolution2D(96, 3, 3, subsample=(2, 2), border_mode='valid'))  #third convolutional layer 96 filters, pooling, dropout, ReLU activation
+    model.add(MaxPooling2D((2, 2)))
+    model.add(Dropout(0.5))
+    model.add(Activation('relu'))
+
+    model.add(Flatten()) # Flatten
+    model.add(Dense(128)) #Fully connected 1
+    model.add(Dense(64)) #Fully connected 2
+    model.add(Dense(1)) #Fully connected 3
+    
+    return model    
+
 samples = readInputData('../data/record/driving_log.csv')
 samples = np.array(samples)
-
 train, val = train_test_split(samples, test_size=0.2)
+#train, val = train_test_split(samples, test_size=0.25)
+#train, val = train_test_split(samples, test_size=0.3)
 
-train_generator = generator(train, batch_size=32)
-val_generator = generator(val, batch_size=32)
-
+train_generator = generator(train, batch_size=32*augment_multiplier)
+val_generator = generator(val, batch_size=32*augment_multiplier)
 n_train = len(train)*augment_multiplier
 n_val = len(val)*augment_multiplier
 
 #CNN model definition
-model = Sequential()
-
-model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160, 320, 3))) #crop image to remove non relevant data (sky and car head)
-
-model.add(Lambda(lambda x: (x / 255.0) - 0.5)) # normalize data (mean = 0)
-
-model.add(Convolution2D(24, 5, 5, subsample=(1, 1), border_mode='valid')) #first convolutional layer 24 filters, pooling, dropout, ReLU activation
-model.add(MaxPooling2D((2, 2)))
-model.add(Dropout(0.4))
-model.add(Activation('relu'))
-
-model.add(Convolution2D(48, 5, 5, subsample=(2, 2), border_mode='valid'))  #second convolutional layer 48 filters, pooling, dropout, ReLU activation
-model.add(MaxPooling2D((2, 2)))
-model.add(Dropout(0.4))
-model.add(Activation('relu'))
-
-model.add(Convolution2D(96, 3, 3, subsample=(2, 2), border_mode='valid'))  #third convolutional layer 96 filters, pooling, dropout, ReLU activation
-model.add(MaxPooling2D((2, 2)))
-model.add(Dropout(0.5))
-model.add(Activation('relu'))
-
-model.add(Flatten()) # Flatten
-model.add(Dense(128)) #Fully connected 1
-model.add(Dense(64)) #Fully connected 2
-model.add(Dense(1)) #Fully connected 3
+model = MyNet()
 
 model.compile(loss = 'mse', optimizer = 'adam')
 
 #drawModel(model)
-#model.summary()
+model.summary()
 history = model.fit_generator(train_generator, samples_per_epoch=n_train,
                     validation_data=val_generator, nb_val_samples=n_val,
-                    nb_epoch=8)
+                    nb_epoch=10)
 drawLoss(history)
 model.save('model.h5')
 #showCorrection(samples)
