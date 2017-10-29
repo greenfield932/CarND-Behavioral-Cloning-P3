@@ -15,7 +15,7 @@ The goals / steps of this project are the following:
 [image4]: ./examples/correction.png "Correction Image"
 [image5]: ./examples/crop.png "Crop Image"
 [image6]: ./examples/loss.png "Loss"
-[image7]: ./examples/dribing_example.png ""
+[image7]: ./examples/driving_example.png ""
 
 
 
