@@ -100,7 +100,7 @@ My training data consists of 2 laps of normal driving in the center of the road.
 ![alt text][image7]
 
 To train model of how to recover from from the left and right sides of the road I used images from left and right cameras extended with angle correction.
-Thus, angle was corrected +0.3 for left camera image and -0.3 for right camera image. Example of images and angles correction:
+Thus, angle was corrected +0.35 for left camera image and -0.35 for right camera image. The correction parameter was found experimentally. Example of images and angles correction:
 
 ![alt text][image4]
 
