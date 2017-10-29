@@ -104,7 +104,7 @@ Thus, angle was corrected +0.35 for left camera image and -0.35 for right camera
 
 ![alt text][image4]
 
-To augment the data sat, I also flipped images and angles so the data of how to drive right and left will be better balanced. So the model will better generalize of how to drive in both directions, not only one, while track data was recorded for one direction only. For example, here is an image that has then been flipped:
+To augment the dataset, I also flipped images and angles so the data of how to drive right and left will be better balanced. So the model will better generalize of how to drive in both directions, not only one, while track data was recorded for one direction only. For example, here is an image that has then been flipped:
 
 ![alt text][image3]
 
