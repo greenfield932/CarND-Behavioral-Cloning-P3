@@ -39,10 +39,6 @@ def readInputData(driving_log_filename):
     correction = 0.35 # this is a parameter to tune
     
     for data in lines:
-        #image = cv2.imread(data[center_img_idx])
-        #image = Image.open(data[center_img_idx])
-        #image = np.asarray(image)
-
         steering = float(data[steering_idx])
         
         samples.append([data[center_img_idx], steering])
@@ -65,9 +61,7 @@ def drawImage(image):
 
 def drawImages(images, rows, cols, labels = []):
 
-    fig = plt.figure(figsize = (cols*4,rows*2))
-#    plt.subplots_adjust(wspace = 0.3, hspace = 1)
-    
+    fig = plt.figure(figsize = (cols*4,rows*2))   
     for i in range(0, len(images)):
         image = images[i]
         subplot = fig.add_subplot(rows, cols, i+1)
@@ -76,20 +70,6 @@ def drawImages(images, rows, cols, labels = []):
             subplot.set_title(labels[i])
         subplot.axis('off')
     plt.show()
-    
-    #image_left = cv2.imread(data[left_img_idx])
-    #steering_left = steering_center + correction
-    #image_data.append(image_left)
-    #steering_data.append(steering_left)
-    
-    #image_right = cv2.imread(data[right_img_idx])
-    #steering_right = steering_center - correction
-    #image_data.append(image_right)
-    #steering_data.append(steering_right)
-
-def evalLayer(model, image, idx):
-    cropping_output = K.function([model.layers[idx].input], [model.layers[idx].output])
-    return cropping_output([image[None,...]])[0]
 
 def augment(image, steering, augtype):
     if augtype == 'flip':        
@@ -107,15 +87,16 @@ def augment(image, steering, augtype):
         image = cv2.cvtColor(image,cv2.COLOR_HSV2RGB)
         return image, steering    
     return image, steering
-        
-def generator(samples, batch_size=30):
+
+augment_multiplier = 2
+def generator(samples, batch_size=32*augment_multiplier):
 
     num_samples = len(samples)
     
     while 1: # Loop forever so the generator never terminates
         sklearn.utils.shuffle(samples)
-        for offset in range(0, num_samples, int(batch_size/3)):
-            batch_samples = samples[offset:offset+int(batch_size/3)]
+        for offset in range(0, num_samples, int(batch_size/augment_multiplier)):
+            batch_samples = samples[offset:offset+int(batch_size/augment_multiplier)]
             
             images = []
             angles = []
@@ -131,10 +112,6 @@ def generator(samples, batch_size=30):
                 image, steering = augment(image0, steering, 'flip')
                 images.append(image)
                 angles.append(steering)
-
-                #image, steering = augment(image0, steering, 'bright')
-                #images.append(image)
-                #angles.append(steering)
 
             X_train = np.array(images)
             y_train = np.array(angles)
@@ -169,7 +146,6 @@ def showCrop(model, samples):
     drawImages([image, cropped_image],1,2,['original','cropped'])
     
 def drawModel(model):
-    #plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)  
     plot(model, to_file='model.png',show_shapes=True, show_layer_names=True)  
 
 def drawLoss(history):
@@ -189,20 +165,15 @@ train, val = train_test_split(samples, test_size=0.2)
 train_generator = generator(train, batch_size=32)
 val_generator = generator(val, batch_size=32)
 
-n_train = len(train)*2
-n_val = len(val)*2
+n_train = len(train)*augment_multiplier
+n_val = len(val)*augment_multiplier
 
 model = Sequential()
+
 model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160, 320, 3)))
-#model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160, 320, 3)))
-#model.add(MaxPooling2D(pool_size=(img_rows/2, img_cols/2)))
-#cropping_output = K.function([model.layers[0].input], [model.layers[0].output])
-#image = image_data[0]
-#cropped_image = cropping_output([image[None,...]])[0]
-#cropped_image = np.uint8(cropped_image[0,...])
-#drawImage(cropped_image)
 
 model.add(Lambda(lambda x: (x / 255.0) - 0.5))
+
 model.add(Convolution2D(24, 5, 5, subsample=(1, 1), border_mode='valid'))
 model.add(MaxPooling2D((2, 2)))
 model.add(Dropout(0.4))
@@ -223,37 +194,17 @@ model.add(Dense(128))
 model.add(Dense(64))
 model.add(Dense(1))
 
-#f, ax = plt.subplots(1, 1, figsize=(5, 5))
-#ax.imshow(cropped_image)
-#plt.show()
-#cropped_image = cropping_output([image[None,...]])[0]
-#model.add(Flatten(input_shape = (90, 320, 3)))
-
-#model.add(Convolution2D(24, 5, 5, subsample=(2, 2), border_mode='same',  input_shape=(3,160,320)))
-#model.add(Activation('relu'))
-
-#model.add(Convolution2D(36, 5, 5, border_mode='same'))
-#model.add(MaxPooling2D(pool_size=(img_rows/2, img_cols/2)))
-#model.add(Flatten())
-#model.add(Dense(1))
-
 model.compile(loss = 'mse', optimizer = 'adam')
 
-drawModel(model)
+#drawModel(model)
 #model.summary()
-#model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch = 8)
-
-#history = model.fit_generator(train_generator, samples_per_epoch=n_train,
-#                    validation_data=val_generator, nb_val_samples=n_val,
-#                    nb_epoch=8)
-#print(history)
-#drawLoss(history)
-#model.save('model.h5')
+history = model.fit_generator(train_generator, samples_per_epoch=n_train,
+                    validation_data=val_generator, nb_val_samples=n_val,
+                    nb_epoch=8)
+drawLoss(history)
+model.save('model.h5')
 #showCorrection(samples)
 #showFlip(samples)
 #showCrop(model, samples)
 #drawImages([readImage(samples[0][0])],1,1,['center image'])
 
-#img = readImage(samples[0][0])
-#img2, steering = augment(img, 0, 'bright')
-#drawImages([img, img2], 1,3)
