@@ -13,7 +13,8 @@ from PIL import Image
 from sklearn.model_selection import train_test_split
 import sklearn
 from keras.utils.visualize_util import plot 
- 
+#from keras.utils import plot_model  
+
 def readInputData(driving_log_filename):
     lines = []
     fd = open(driving_log_filename)
@@ -168,7 +169,8 @@ def showCrop(model, samples):
     drawImages([image, cropped_image],1,2,['original','cropped'])
     
 def drawModel(model):
-    plot(model, to_file='model.png')  
+    #plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)  
+    plot(model, to_file='model.png',show_shapes=True, show_layer_names=True)  
 
 def drawLoss(history):
     plt.plot(history.history['loss'])
@@ -237,15 +239,16 @@ model.add(Dense(1))
 
 model.compile(loss = 'mse', optimizer = 'adam')
 
+drawModel(model)
 #model.summary()
 #model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch = 8)
 
-history = model.fit_generator(train_generator, samples_per_epoch=n_train,
-                    validation_data=val_generator, nb_val_samples=n_val,
-                    nb_epoch=8)
+#history = model.fit_generator(train_generator, samples_per_epoch=n_train,
+#                    validation_data=val_generator, nb_val_samples=n_val,
+#                    nb_epoch=8)
 #print(history)
-drawLoss(history)
-model.save('model.h5')
+#drawLoss(history)
+#model.save('model.h5')
 #showCorrection(samples)
 #showFlip(samples)
 #showCrop(model, samples)
