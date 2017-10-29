@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from sklearn.model_selection import train_test_split
 import sklearn
-
+from keras.utils.visualize_util import plot 
+ 
 def readInputData(driving_log_filename):
     lines = []
     fd = open(driving_log_filename)
@@ -138,7 +139,46 @@ def generator(samples, batch_size=30):
             y_train = np.array(angles)
             yield sklearn.utils.shuffle(X_train, y_train)
 
+def showFlip(samples):
+    idx = 99
+    img0 = readImage(samples[idx][0])
+    steer = float(samples[idx][1])
+    img1, steer_flip = augment(img0, steer, 'flip')
+    drawImages([img0, img1], 1, 2, ["original: {0:.2f}".format(steer) , "flipped: : {0:.2f}".format(steer_flip)] )
 
+
+def showCorrection(samples):
+    idx = 0
+    img_center = readImage(samples[idx][0])
+    img_left = readImage(samples[idx+1][0])
+    img_right = readImage(samples[idx+2][0])
+
+    steer_center = "{0:.2f}".format(float(samples[idx][1]))
+    steer_left ="{0:.2f}".format(float(samples[idx+1][1]))
+    steer_right ="{0:.2f}".format(float(samples[idx+2][1]))
+
+    drawImages([img_left, img_center, img_right], 1, 3, ['left_image:'+steer_left, 'center_image:'+steer_center, 'right_image:'+steer_right])
+
+def showCrop(model, samples):
+
+    image = readImage(samples[0][0])
+    cropping_output = K.function([model.layers[0].input], [model.layers[0].output])
+    cropped_image = cropping_output([image[None,...]])[0]
+    cropped_image = np.uint8(cropped_image[0,...])
+    drawImages([image, cropped_image],1,2,['original','cropped'])
+    
+def drawModel(model):
+    plot(model, to_file='model.png')  
+
+def drawLoss(history):
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
+    
 samples = readInputData('../data/record/driving_log.csv')
 samples = np.array(samples)
 
@@ -200,11 +240,16 @@ model.compile(loss = 'mse', optimizer = 'adam')
 #model.summary()
 #model.fit(X_train, y_train, validation_split=0.2, shuffle=True, nb_epoch = 8)
 
-model.fit_generator(train_generator, samples_per_epoch=n_train,
-                    validation_data=val_generator, nb_val_samples=n_val,
-                    nb_epoch=5)
-
-model.save('model.h5')
+#history = model.fit_generator(train_generator, samples_per_epoch=n_train,
+#                    validation_data=val_generator, nb_val_samples=n_val,
+#                    nb_epoch=7)
+#print(history)
+#drawLoss(history)
+#model.save('model.h5')
+#showCorrection(samples)
+#showFlip(samples)
+#showCrop(model, samples)
+drawImages([readImage(samples[0][0])],1,1,['center image'])
 
 #img = readImage(samples[0][0])
 #img2, steering = augment(img, 0, 'bright')
